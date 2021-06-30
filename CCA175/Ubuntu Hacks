@@ -1,0 +1,21 @@
+******Grant permission****
+sudo chown -R "user" /app/spark/tmp
+sudo chmod -R 755 /app/spark/tmp
+
+pwd -- it gives current directory full path
+
+tail -f [file]
+--Show file updates in terminal
+
+
+mv 
+--Rename File
+
+vi
+--View File
+--In view mode for replacing the keyword
+:%s/[search keyword]/[Replace with]
+
+update profile 
+. ~/.bash
+

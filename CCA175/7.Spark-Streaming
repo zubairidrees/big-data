@@ -1,0 +1,64 @@
+from pyspark.streaming import StreamingContext
+ssc = StreamingContext(sc,30)
+ssc.start()
+ssc.awaitTermination() 
+
+webservice mock up
+nc localhost 9999
+
+nc -lk 9999
+
+*************************   StreamingWorkCount.py   *********************************
+from pyspark import SparkContext,SparkConf
+from pyspark.streaming import StreamingContext
+
+conf =SparkConf().setAppName("Streaming work count").setMaster(yarn-client)
+sc = SparkContext(conf=conf)
+ssc = StreamingCOntext(sc,15)
+lines - ssc.socketTextStream("localhost",9999)
+
+words = lines.flatMap(lambda x: x.split(" "))
+wordsTuples = words.map(lambda w:(w,1))
+wordsCount = wordsTuples.reduceByKey(lambda x,y:x+y)
+
+wordsCount.pprint()
+
+ssc.start()
+ssc.awaitTermination()
+
+
+***************  Run the program  *****************
+spark-submit --master yarn --conf spark.ui.port=12890 src/main/pyhton/StreamingWorkCount.py
+
+
+*********************  Get Department wise traffic count  ***********************
+
+from pyspark import SparkContext,SparkConf
+from pyspark.streaming import StreamingContext
+from operator import add
+import sys
+
+hostname = sys.argv[1]
+port = sys.argv[2]
+
+conf =SparkConf().setAppName("Streaming work count").setMaster(yarn-client)
+sc = SparkContext(conf=conf)
+ssc = StreamingContext(sc,15)
+msgs - ssc.socketTextStream("localhost",9999)
+dmsgs = msgs.filter(lambda m:m.split(" ")[6].split("/")[1] == "department")
+dnames = dmsg.map(lambda m:(m.split(" ")[6].split("/")[2],1))
+dcout = dnames.reducebykey(add)
+outputprefix = sys.argv[3]
+
+dcount.saveAsTextFiles(poutputprefix)
+
+ssc.start()
+ssc.awaitTermination()
+
+
+
+**********************
+tail_logs.sh | nc -lk localhost 19999
+
+https://spark.apache.org/docs/1.6.3/streaming-flume-integration.html
+

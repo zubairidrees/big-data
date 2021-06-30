@@ -1,0 +1,9 @@
+slaves
+
+127.0.0.1
+
+spark-default.conf
+spark.master spark://127.0.1.1:7077
+
+spark-env.sh
+SPARK_LOCAL_IP=127.0.0.1

@@ -1,0 +1,441 @@
+https://sqoop.apache.org/docs/1.4.6/SqoopUserGuide.html
+Sqoop import
+Sqoop Export
+Sqoop eval
+Sqoop list databases
+sqoop list tables
+sqoop help
+
+sqoop help eval
+
+
+download file :https://github.com/dgadiraju/code/tree/master/hadoop/edw/database/retail_db.sql
+
+mysql -u root -p sys;
+password: root
+
+create database retail_db;
+create user retail_dba identified by 'admin';
+grant all on retail_db.* to retail_dba;
+flush privileges;
+
+mysql -u retail_dba -p retail_db;
+passowrd: admin
+use retail_db;
+source /retail_db.sql
+
+create database hr_db;
+create user hr_dba identified by 'admin';
+grant all on hr_db.* to hr_dba;
+flush privileges;
+
+mysql -u retail_dba -p retail_db;
+passowrd: admin
+use hr_db;
+source /hr_dbmysql.sql
+
+
+create user retail_export_dba identified by 'admin';
+grant all on retail_export.* to retail_export_dba;
+flush privileges;
+
+sqoop list-databases \
+ --connect jdbc:mysql://localhost:3306 \
+ --username retail_dba \
+ --password admin
+
+sqoop list-tables \
+ --connect jdbc:mysql://localhost:3306/retail_db \
+ --username retail_dba \
+ --password admin
+
+ sqoop eval \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+ --username retail_dba \
+ --password admin \
+ --query "SELECT * FROM orders LIMIT 10"
+
+
+  sqoop eval \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --query "INSERT INTO orders values(100000, '2019-01-01 11:32:00.0', 100000, 'DUMMY')"
+
+
+ sqoop eval \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_dba \
+  --password admin \
+  --query "CREATE table dummy(i INT)" 
+
+  sqoop eval \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_dba \
+  --password admin \
+  --query "INSERT INTO dummy values(1)" 
+
+  sqoop eval \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_dba \
+  --password admin \
+  --query "SELECT * FROM dummy" 
+
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --target-dir /user/zubairidrees/sqoop_import/retail_db/order_items
+
+    sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --warehouse-dir /user/zubairidrees/retail_db
+
+    sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --num-mappers 1
+
+sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --delete-target-dir
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --num-mappers 1 \
+  --append
+
+  //Things to remeber for split-by
+  	- column should be indexed
+ 	- values in field should be in sequece or sparse
+ 	- should not have null values
+
+
+sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --delete-target-dir \
+  --split-by order_status
+
+//File Format
+
+--as avrodatafile : Binary Json File
+--as sequencefile : Binary file
+--as textfile : normal file
+--as parquetfile columnar format
+
+ sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --delete-target-dir \
+  --textfile
+
+//There are 4 different compression algo's
+Default is GZIP
+Snappy
+refer algo's in core-site.xml property "io.compression.codec" 
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --delete-target-dir \
+  --compress \
+  --compress-codec org.apache.hadoop.io.compress.SnappyCodec
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --delete-target-dir \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --boundary-query 'select min(order_item_id), max(order_item_id) from order_items where order_item_id > 90000'
+
+
+
+ sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --columns order_item_order_id, order_item_id. order_item_subtotal \
+  --delete-target-dir \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+
+\\Note 
+	- Use "and \$CONDITIONS" after where conditions & before group by
+	- table and/or columns is mutually exclusive with query
+	- for query split-by is mandatory if num-mapers > 1
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --target-dir /user/zubairidrees/sqoop_import/retail_db/order_items \
+  --delete-target-dir \
+  --query "select * from order_items where order_item_id < 11 and \$CONDITIONS" \
+  --split-by order_item_id \
+  --m 1
+
+   sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --delete-target-dir \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db \
+  --autorest-one-mapper
+
+
+   sqoop import \
+  --connect jdbc:mysql://localhost:3306/hr_db \
+  --username hr_dba \
+  --password admin \
+  --table employees \
+  --delete-target-dir \
+  --warehouse-dir /user/zubairidrees/sqoop_import/hr_db \
+  --null-non-string -1 \
+  --fields-terminated-by '\t' \
+  --lines-terminated-by ":"
+
+     sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --where "order_date like '2013-%'" \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db
+
+//Note use append for updating
+
+      sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --where "order_date like '2014-02%'" \
+  --target-dir /user/zubairidrees/sqoop_import/retail_db/orders \
+  --append
+
+
+
+    sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --check-column order_date \
+  --target-dir /user/zubairidrees/sqoop_import/retail_db/orders \
+  --incremental append \
+  --last-value '2014-02-28'
+
+  sqoop import-all-tables \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --warehouse-dir /user/zubairidrees/sqoop_import/retail_db
+
+  sqoop job --create test -- import --connect 'jdbc:mysql://quickstart:3306/retail_db' --username retail_dba --password cloudera --table orders --split-by order_id --target-dir /user/sqoop/orders --check-column order_date --merge-key order_id  --incremental lastmodified --as-textfile
+
+  sqoop job --list //list out created sqoop jobs
+sqoop job --exec test //execute sqoop job
+sqoop job --delete test //delete sqoop job
+
+
+****************************HIVE*******************************
+how to setup hive
+https://www.edureka.co/blog/apache-hive-installation-on-ubuntu
+
+
+hive>
+create database hive_retail_db;	
+exit;
+
+ sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --hive-import \
+  --hive-database hive_retail_db \
+  --hive-table order_items \
+  --num-mappers 2
+
+  hive
+  user hive_retail_db;
+  show tables;
+  describe formatted order_items;
+
+  Note: default field delimeter in hive is ^A (control A ) or ascii 1. while coping data to other formats take care of it
+
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --hive-import \
+  --hive-database hive_retail_db \
+  --hive-table order_items \
+  --hive-overwrite \
+  --num-mappers 2
+
+  sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table order_items \
+  --hive-import \
+  --hive-database hive_retail_db \
+  --hive-table order_items \
+  --create-hive-table \
+  --num-mappers 2
+
+   sqoop import \
+  --connect jdbc:mysql://localhost:3306/retail_db \
+  --username retail_dba \
+  --password admin \
+  --table orders \
+  --hive-import \
+  --hive-database hive_retail_db \
+  --hive-table orders \
+  --create-hive-table \
+  --num-mappers 2
+*****************************************************************
+
+**************************** Sqoop Export************************
+  
+hive>
+  create table daily_revenue as 
+  select order_date, sum(order_item_subtotal) daily_revenue
+  from orders inner join order_items
+  on order_id = order_item_order_id
+  where order_date like '2013-07%'
+  group by order_date ;
+
+Note: take --export-dir value by executing below commands exclude machine name "hdfs://localhost:9000/"
+hive> 
+describe formatted daily_revenue;
+
+mysql>
+create table daily_revenue (order_date varchar(30) primary key,daily_revenue double  );
+
+
+ sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue
+
+hive>
+ create table daily_revenue_demo (revenue float,
+   order_date varchar(30),
+   description varchar(30)
+   );
+
+   sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --columns order_date,revenue
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue_demo
+
+  practice for --call store procedure
+
+hive>
+  drop table daily_revenue_demo;
+hive>  
+  create table daily_revenue_demo (revenue float,
+   order_date varchar(30) primary key,
+   description varchar(30)
+   );
+
+***************Update the existing record only********************
+
+   insert into table daily_revenue 
+   select order_date, sum(order_item_subtotal) daily_revenue
+  from orders inner join order_items
+  on order_id = order_item_order_id
+  where order_date like '2013-08%'
+  group by order_date
+
+  sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue \
+  --update-key order_date
+
+***************Only insert new records & don't update matching records********************
+   sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue \
+  --update-key order_date  \
+  --update-mode allowinsert
+
+  ***************************************************************
+
+  ****************** Staging Table ******************************
+
+  hive>
+   insert into table daily_revenue 
+   select order_date, sum(order_item_subtotal) daily_revenue
+  from orders inner join order_items
+  on order_id = order_item_order_id
+  group by order_date;
+
+sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue
+
+mysql>
+  create table daily_revenue_stage (order_date varchar(30) primary key,daily_revenue double  );
+
+   sqoop export \
+  --connect jdbc:mysql://localhost:3306/retail_export \
+  --username retail_export_dba \
+  --password admin \
+  --export-dir /user/hive/warehouse/hive_retail_db.db/daily_revenue \
+  --staging-table daily_revenue_stage \
+  --clear-staging-table \
+  --input-fields-terminated-by "\001" \
+  --table daily_revenue

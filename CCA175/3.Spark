@@ -1,0 +1,15 @@
+**************How to setup spark**********
+
+Note: use spark.master spark://127.0.1.1:7077 insteadof 127.0.0.1:7077 in spark-defaults.conf file
+
+https://www.youtube.com/watch?v=nZWhIsB0VKk
+*************************************************
+pyspark 
+
+/home/zubairidrees/spark/spark-2.0.2-bin-hadoop2.7
+/home/zubairidrees/spark/spark-2.0.2-bin-hadoop2.7
+
+Spark Job details URL
+http://localhost:4040
+
+

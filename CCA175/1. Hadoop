@@ -1,0 +1,91 @@
+start-dfs.sh - to start hadoop
+start-yarn.sh to resourece manager
+hadoop namenode -format - format namenode server
+jps
+
+hadoop
+	Namenode 
+		To check environment detail
+		port : 50070
+		default http://localhost:50070
+
+	config file location
+		/etc/hadoop/conf
+			hdfs-site.xml
+				dfs.blocksize - data divided into size
+				dfs.replication - no. of copies
+
+			core-site.xml - it contains information about cluster 
+				fs.defaultFS is the URI for namenode  [note: exclude hdfs & port from url & append port 50070 to see env detail]
+
+hadoop fs -ls
+
+might needed in exam to create userspace & grant permision 
+sudo -u hdfs hadoop fs -mkdir /user/root;
+sudo -u hdfs hadoop fs -chown -R root /user/root
+
+to check filesize : du -sh /data/crime
+
+hadoop fs -help copyFromLocal
+
+hadoop fs -copyFromLocal data/retail_db /user/zubairidrees/.
+
+hadoop fs -ls /user/zubairidrees/crime
+
+hadoop fs -ls -R /user/zubairidrees/crime [Note: -R to also list files in subfolders]
+
+Get to know file size
+hadoop fs -du -s -h /user/zubairidrees
+
+how files are divided into blocks in different locations
+hdfs fsck /user/zubairidrees/crime -files -blocks -locations
+
+hdfs dfs -tail : open & see file in console
+	  
+hdfs dfs -rm -R : delete directory in hdfs
+
+hdfs dfs -get /user/zubairidrees/sqoop_import/retail_db/order_items /order_items
+
+gunzip part*.gz
+
+yarn
+	yarn-site.xml
+		recourcemanager.address 
+		recourcemanager.webapp.address - yarn web ui 
+			default http://localhost:8088
+	spark.evn.sh - node memory & core setting
+		SPARK_EXECUTOER_MEMORY
+		SPARK_EXECUTOER_CORE - no of core configured for each job
+			setting executor core as per total availble V cores
+			50 percentage v-core should be consumed 
+			no of jobs * executor core = 50% of v-core
+
+Copy files from local to hdf
+ 	hdfs dfs -mkdir /user
+ 	hdfs dfs -mkdir /user/zubairidrees
+	hdfs dfs -copyFromLocal data/retail_db /user/zubairidrees
+
+Check Size of the data
+	hdfs dfs -du -s -h /user/zubairidrees
+	du -s -h /user/zubairidrees
+
+Check no of records in file
+	wc -l data/retail_db/*/*
+
+pyspark --master yarn \
+		--conf spart.ui.port 12567 \
+		--num-executer 2
+		--executer-memory 512k
+
+In order to list available pyspark command line parameters just write "spark-submit" on command line
+
+--arvo file
+pyspark 
+--packages com.databricks:spark-avro_2.10:2.0.1
+--jars <PATH TO JAR>
+
+spar-submit --master yarn \
+		--conf spart.ui.port 12567 \
+		--num-executer 2
+		--executer-memory 512k
+		src/main/GetDailyRevenue.py
